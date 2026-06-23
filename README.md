@@ -409,15 +409,6 @@ run:
 python takemeter_interface.py --model-dir PATH_TO_CHECKPOINT --share
 ```
 
-### Inter-Annotator Reliability Preparation
-
-I prepared a blinded, balanced 30-comment workbook for an independent second
-annotator: [inter_annotator_reliability.xlsx](inter_annotator_reliability.xlsx).
-It contains the definitions, decision ladder, label dropdowns, and ten examples
-from each reference class without revealing my labels. This stretch feature
-will be reported only after another person completes the workbook; an AI label
-comparison would not satisfy the requirement for another person.
-
 ## Specification Reflection
 
 - **How the specification guided my work:** The requirement to create a locked

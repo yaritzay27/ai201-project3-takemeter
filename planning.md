@@ -396,15 +396,6 @@ the current 30-example test set because it has already been examined.
 
 ## Stretch Feature Plan
 
-### Inter-Annotator Reliability
-
-I will give a blinded, balanced set of 30 comments to another person and ask
-them to label every item independently with the same definitions and decision
-ladder. I will not show them my labels until they return the completed
-`inter_annotator_reliability.xlsx` workbook. I will then calculate percentage
-agreement and Cohen's kappa and examine every disagreement by label pair. This
-stretch feature is complete only after another person returns the workbook.
-
 ### Confidence Calibration
 
 I used the fine-tuned model's saved test probabilities to compare average
