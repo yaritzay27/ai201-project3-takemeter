@@ -407,12 +407,15 @@ stretch feature is complete only after another person returns the workbook.
 
 ### Confidence Calibration
 
-I will use the fine-tuned model's saved test probabilities to compare average
+I used the fine-tuned model's saved test probabilities to compare average
 confidence with empirical accuracy, calculate expected calibration error and a
 multiclass Brier score, and report confidence separately for correct and
-incorrect predictions. Because the model's scores appear concentrated near one
-third, I will avoid claiming that confidence distinguishes easy from difficult
-examples unless the bin results support that conclusion.
+incorrect predictions. All 30 predictions landed in the 0.3–0.4 bin, with mean
+confidence 0.3546 and accuracy 0.5333. Expected calibration error was 0.1787,
+and the multiclass Brier score was 0.6573. Mean confidence was 0.3536 for
+correct predictions and 0.3558 for incorrect predictions, so confidence did
+not distinguish successful classifications from errors. I therefore rejected
+any claim that the confidence scores provided a useful ranking of certainty.
 
 ### Error Pattern Analysis
 
@@ -425,8 +428,9 @@ set.
 
 ### Deployed Interface
 
-I will add a small Gradio interface that accepts a new comment and displays all
+I added a small Gradio interface that accepts a new comment and displays all
 three label probabilities using the trained model already loaded in Colab. The
-interface will use the same 256-token truncation as evaluation and will be
-documented as a diagnostic demonstration rather than a production community
-moderation tool.
+interface uses the same 256-token truncation as evaluation and is documented as
+a diagnostic demonstration rather than a production community moderation tool.
+The deployment stretch is complete only after I launch the interface and verify
+that it returns a label and confidence scores for a new comment.

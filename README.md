@@ -9,7 +9,7 @@ not to judge whether a person's musical taste is correct.
 ## Current Status
 
 - I completed Milestones 1–5 and the required written evaluation for Milestone 6.
-- The demo video and the human/calibration stretch-feature results remain.
+- The demo video, independent human labels, and live interface launch remain.
 
 ## Label Taxonomy
 
@@ -347,6 +347,26 @@ was not one topic, length, or rhetorical style: the model assigned the majority
 label to every example from both minority classes. I compared that pattern with
 the training distribution, confidence range, validation plateau, and warmup
 schedule rather than inferring a cause from only three selected mistakes.
+
+### Confidence Calibration
+
+All 30 predictions fell into the same 0.3–0.4 confidence bin. Their mean
+confidence was 0.3546, while their empirical accuracy was 0.5333.
+
+| Confidence bin | Examples | Mean confidence | Accuracy |
+|---|---:|---:|---:|
+| 0.3–0.4 | 30 | 0.3546 | 0.5333 |
+
+The expected calibration error was 0.1787 and the multiclass Brier score was
+0.6573. For context, uniform probabilities across three classes produce a
+multiclass Brier score of about 0.6667, so the model improved only slightly over
+uninformative probabilities. Mean confidence was 0.3536 on correct predictions
+and 0.3558 on incorrect predictions. Incorrect predictions were therefore
+slightly more confident than correct ones, and confidence could not separate
+easy from difficult examples. The model never produced medium- or
+high-confidence predictions, so this test cannot establish whether a nominal
+60% or 90% score would be reliable. The complete calculation is saved in
+[confidence_calibration.json](confidence_calibration.json).
 
 ### Deployed Gradio Interface
 

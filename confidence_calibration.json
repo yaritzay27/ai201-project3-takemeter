@@ -1,0 +1,17 @@
+{
+  "test_examples": 30,
+  "overall_accuracy": 0.5333,
+  "mean_confidence": 0.3546,
+  "mean_confidence_correct": 0.3536,
+  "mean_confidence_incorrect": 0.3558,
+  "expected_calibration_error": 0.1787,
+  "multiclass_brier_score": 0.6573,
+  "bins": [
+    {
+      "confidence_bin": "0.3-0.4",
+      "count": 30,
+      "mean_confidence": 0.3546,
+      "accuracy": 0.5333
+    }
+  ]
+}
