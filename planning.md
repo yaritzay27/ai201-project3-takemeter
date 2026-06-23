@@ -5,10 +5,13 @@
 - I completed Milestone 1: community review and taxonomy design.
 - I completed Milestone 2: written specification.
 - I completed Milestone 3: collection, annotation, and human review.
+- I completed Milestone 4: zero-shot baseline evaluation.
+- I completed Milestone 5: DistilBERT fine-tuning and test evaluation.
+- I completed the written Milestone 6 evaluation; the demo recording remains.
 
 My final dataset contains 200 public comments from r/LetsTalkMusic. I used Codex
-to pre-label every row, and then I reviewed the annotations and confirmed them
-without corrections. All `human_reviewed` values are `yes`.
+to pre-label every row, and then I reviewed the annotations and made minor
+corrections where needed. All `human_reviewed` values are `yes`.
 
 ## Milestone 1: Community and Label Taxonomy
 
@@ -217,9 +220,10 @@ dataset.
 #### Annotation assistance
 
 I used Codex to pre-label all 200 comments with my written decision ladder and
-mark six especially difficult cases in the `notes` column. Every row contains
-`ai_prelabeled=yes` in my review workbook. I subsequently reviewed the
-annotations, confirmed the proposed labels without corrections, and recorded
+mark six especially difficult cases in the review workbook's `notes` column. I
+also included those six explanations in the notebook CSV's `notes` column and
+left the other 194 note cells blank. Every row contains `ai_prelabeled=yes` in my
+review workbook. I subsequently reviewed the annotations, confirmed the proposed labels and made minor corrections, and recorded
 all `human_reviewed` values as `yes`. I will disclose this assistance and my
 review process in the README's final AI usage section.
 
@@ -281,9 +285,148 @@ No label exceeds 70%, and every label exceeds the 20% collection target.
 
 ### Human Review Completion
 
-I reviewed the annotations and confirmed the proposed labels without changes.
+I reviewed the annotations and made minor corrections where needed.
 My review workbook records `human_reviewed=yes` for all 200 rows, while my
 notebook CSV intentionally contains only `text`, `label`, and `notes`. I
 recalculated the final distribution and confirmed that it still passes the
 balance requirements, so my dataset is ready for the Colab baseline and
 training pipeline.
+
+## Milestone 4: Zero-Shot Baseline
+
+### Prompt Design
+
+I copied my three label definitions from this planning document into the Groq
+classification prompt without changing their wording. The prompt also used my
+decision ladder and required the model to respond with only one of the three
+exact label names. I used newly written examples rather than comments from my
+labeled dataset because the dataset examples could appear in the locked test
+split. This kept the baseline prompt from revealing labels for possible test
+examples.
+
+### Baseline Results
+
+I ran `llama-3.3-70b-versatile` on the locked 30-example test set before
+fine-tuning. All 30 responses were parseable.
+
+| Label or metric | Precision | Recall | F1 | Support |
+|---|---:|---:|---:|---:|
+| `supported_analysis` | 1.000 | 0.500 | 0.667 | 16 |
+| `reasoned_opinion` | 0.533 | 1.000 | 0.696 | 8 |
+| `unelaborated_response` | 0.714 | 0.833 | 0.769 | 6 |
+| Macro average | 0.749 | 0.778 | 0.711 | 30 |
+| Weighted average | 0.818 | 0.700 | 0.695 | 30 |
+
+Overall accuracy was 0.700, or 21 correct predictions out of 30. The complete
+machine-readable results are saved in `baseline_results.json`.
+
+### Baseline Reflection
+
+The baseline performed best on `unelaborated_response`, while its main weakness
+was recognizing `supported_analysis`. It correctly identified only 8 of the 16
+supported-analysis examples. The reported class counts imply that it labeled 6
+of the remaining supported analyses as `reasoned_opinion` and 2 as
+`unelaborated_response`. It correctly identified all 8 reasoned opinions, but
+the additional false positives reduced that class's precision.
+
+This pattern supports my hypothesis that a general model is conservative about
+calling a response supported analysis when the evidence-to-claim connection is
+implicit. I expect fine-tuning on my annotated examples to improve the boundary
+between `supported_analysis` and `reasoned_opinion`.
+
+### Fine-Tuning Target
+
+To meet my definition of a meaningful improvement, the fine-tuned model must
+beat the baseline by at least five percentage points in accuracy or macro F1.
+Because the test set has 30 examples, the next attainable accuracy at least five
+points above 0.700 is 23 correct predictions, or 0.767. The corresponding macro
+F1 target is at least 0.761. I will also retain my requirements of at least 0.60
+F1 for every label and at least 0.70 overall macro F1.
+
+## Milestone 5: Fine-Tuning Record
+
+I fine-tuned `distilbert-base-uncased` on a T4 GPU using the starter notebook.
+The stratified split contained 140 training, 30 validation, and 30 test
+examples. I retained the original settings of three epochs, learning rate
+`2e-5`, training batch size 16, evaluation batch size 32, weight decay 0.01,
+50 warmup steps, and random seed 42. I kept these defaults for the report so the
+result reflects the provided pipeline without choosing settings based on the
+test set.
+
+Validation loss decreased from 1.083 to 0.998, but validation accuracy stayed
+at 0.533 for all three epochs. On the locked test set, the model also achieved
+0.533 accuracy. Its per-class F1 scores were 0.696 for
+`supported_analysis` and 0.000 for both `reasoned_opinion` and
+`unelaborated_response`. The confusion matrix showed that it predicted
+`supported_analysis` for all 30 examples.
+
+The fine-tuned model therefore missed my success criteria. It scored 0.167
+below the Groq baseline in accuracy, had macro F1 of 0.232 rather than at least
+0.70, and failed the minimum 0.60 F1 requirement for two labels. A separate
+warmup-three checkpoint was exploratory only; I did not evaluate it or replace
+the default run with it after viewing the locked test results.
+
+## Milestone 6: Evaluation Notes
+
+### Verified Failure Pattern
+
+I used Codex to propose patterns across the 14 wrong predictions and then
+checked those suggestions against every error. I considered short length,
+sarcasm, named artists or songs, factual answers, and long personal responses.
+Those features appeared in individual examples, but I rejected them as the
+main explanation because the errors covered many lengths, topics, and writing
+styles. The decisive pattern was that every one of the eight true
+`reasoned_opinion` examples and every one of the six true
+`unelaborated_response` examples was predicted as `supported_analysis`.
+
+The training distribution was 75, 35, and 30 examples across the three labels,
+and the 50 warmup steps exceeded the run's 27 optimization steps. Combined with
+confidence scores near one third and validation accuracy fixed at the majority
+rate, this supports a diagnosis of majority-class collapse rather than one
+isolated semantic boundary failure.
+
+### Next Experimental Design
+
+If I repeated the project with a new locked test set, I would use a warmup ratio
+near 10%, choose checkpoints using macro F1, and compare class-weighted loss or
+balanced sampling against the unchanged default. I would also collect more
+minority-class examples that mention artists, songs, statistics, or personal
+details without using those details as evidence. I would not tune further on
+the current 30-example test set because it has already been examined.
+
+## Stretch Feature Plan
+
+### Inter-Annotator Reliability
+
+I will give a blinded, balanced set of 30 comments to another person and ask
+them to label every item independently with the same definitions and decision
+ladder. I will not show them my labels until they return the completed
+`inter_annotator_reliability.xlsx` workbook. I will then calculate percentage
+agreement and Cohen's kappa and examine every disagreement by label pair. This
+stretch feature is complete only after another person returns the workbook.
+
+### Confidence Calibration
+
+I will use the fine-tuned model's saved test probabilities to compare average
+confidence with empirical accuracy, calculate expected calibration error and a
+multiclass Brier score, and report confidence separately for correct and
+incorrect predictions. Because the model's scores appear concentrated near one
+third, I will avoid claiming that confidence distinguishes easy from difficult
+examples unless the bin results support that conclusion.
+
+### Error Pattern Analysis
+
+I completed a systematic review of all 14 errors rather than selecting only
+three examples. I tested possible patterns involving length, sarcasm, factual
+answers, named musical references, and personal anecdotes. I retained the
+majority-class collapse as the supported pattern and rejected the surface-level
+patterns as primary explanations because they did not cover the complete error
+set.
+
+### Deployed Interface
+
+I will add a small Gradio interface that accepts a new comment and displays all
+three label probabilities using the trained model already loaded in Colab. The
+interface will use the same 256-token truncation as evaluation and will be
+documented as a diagnostic demonstration rather than a production community
+moderation tool.
